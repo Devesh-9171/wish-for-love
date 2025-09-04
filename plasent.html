@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Special Surprise For You!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            background: linear-gradient(to top, #ffdde1, #ee9ca7);
+        }
+        #main-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            outline: none;
+            display: block;
+        }
+        .text-overlay {
+            font-family: 'Playfair Display', serif;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .birthday-card {
+            font-family: 'Playfair Display', serif;
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .gift-hint {
+             animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- This canvas is where the 3D scene will be rendered -->
+    <canvas id="main-canvas"></canvas>
+
+    <!-- Overlay content -->
+    <div id="content-overlay" class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center pointer-events-none">
+        <div class="text-overlay">
+            <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold" style="color: rgb(84, 77, 77);">To my dearest,</h1>
+            <!-- <<< --- PLACEHOLDER: Change "My Love" to your wife's name --- >>> -->
+            <h2 id="name-placeholder" class="text-5xl md:text-7xl lg:text-8xl italic mt-2 mb-8" style="color: #eb50ba;">Rishudii ❤️</h2>
+        </div>
+        <p id="gift-hint" class="gift-hint text-lg md:text-2xl mt-auto bg-black bg-opacity-20 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg">
+            I got a little something for you... tap the gift!
+        </p>
+    </div>
+
+    <!-- The hidden birthday message modal -->
+    <div id="birthday-modal" class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-lg flex items-center justify-center p-4 hidden">
+        <div class="birthday-card bg-white text-gray-800 rounded-2xl shadow-2xl max-w-lg w-full text-center p-8 md:p-12 relative transform transition-all duration-500">
+            <h3 class="text-4xl md:text-5xl font-bold text-pink-500">Happy Birthday in Advance!</h3>
+            <p class="mt-6 text-lg md:text-xl leading-relaxed">
+                Wishing you a day filled with love, joy, and everything you've ever dreamed of. You make my world brighter every single day.
+            </p>
+            <p class="mt-4 text-lg md:text-xl font-semibold">With all my love,</p>
+            <p class="mt-1 text-lg md:text-xl">Your Husband Devuu ❤️</p>
+            <button id="close-modal" class="absolute top-2 right-2 md:top-4 md:right-4 text-gray-400 hover:text-gray-700 text-3xl">&times;</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Basic Three.js scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('main-canvas'),
+            antialias: true,
+            alpha: true // Make canvas transparent to see CSS background
+        });
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        
+        camera.position.z = 5;
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 7.5);
+        scene.add(directionalLight);
+
+        // --- Gift Box ---
+        const giftGroup = new THREE.Group();
+        const boxMaterial = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 }); // Red color
+        const ribbonMaterial = new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.1, roughness: 0.2 }); // Gold ribbon
+
+        // Main box
+        const boxGeometry = new THREE.BoxGeometry(1.5, 1, 1.5);
+        const box = new THREE.Mesh(boxGeometry, boxMaterial);
+        giftGroup.add(box);
+
+        // Ribbon bands
+        const ribbonXGeometry = new THREE.BoxGeometry(1.6, 0.2, 0.4);
+        const ribbonX = new THREE.Mesh(ribbonXGeometry, ribbonMaterial);
+        giftGroup.add(ribbonX);
+
+        const ribbonZGeometry = new THREE.BoxGeometry(0.4, 0.2, 1.6);
+        const ribbonZ = new THREE.Mesh(ribbonZGeometry, ribbonMaterial);
+        giftGroup.add(ribbonZ);
+        
+        // Lid
+        const lidGeometry = new THREE.BoxGeometry(1.55, 0.4, 1.55);
+        const lid = new THREE.Mesh(lidGeometry, boxMaterial);
+        lid.position.y = 0.6;
+        giftGroup.add(lid);
+        
+        giftGroup.position.y = -0.5; // Lower the gift a bit
+        scene.add(giftGroup);
+
+        // --- Floating Hearts ---
+        const hearts = [];
+        const heartShape = new THREE.Shape();
+        heartShape.moveTo(0.25, 0.25);
+        heartShape.bezierCurveTo(0.25, 0.25, 0.2, 0, 0, 0);
+        heartShape.bezierCurveTo(-0.3, 0, -0.3, 0.35, -0.3, 0.35);
+        heartShape.bezierCurveTo(-0.3, 0.55, -0.1, 0.77, 0.25, 0.95);
+        heartShape.bezierCurveTo(0.6, 0.77, 0.8, 0.55, 0.8, 0.35);
+        heartShape.bezierCurveTo(0.8, 0.35, 0.8, 0, 0.5, 0);
+        heartShape.bezierCurveTo(0.35, 0, 0.25, 0.25, 0.25, 0.25);
+
+        const heartGeometry = new THREE.ShapeGeometry(heartShape);
+        const heartMaterial = new THREE.MeshBasicMaterial({ color: 0xff69b4, side: THREE.DoubleSide });
+
+        for (let i = 0; i < 20; i++) {
+            const heart = new THREE.Mesh(heartGeometry, heartMaterial.clone());
+            heart.material.opacity = Math.random() * 0.5 + 0.2;
+            heart.position.set(
+                (Math.random() - 0.5) * 15,
+                (Math.random() - 0.5) * 15,
+                (Math.random() - 0.5) * 10
+            );
+            heart.scale.setScalar(Math.random() * 0.5 + 0.1);
+            heart.rotation.z = Math.random() * Math.PI;
+            hearts.push(heart);
+            scene.add(heart);
+        }
+
+        // --- Interactivity ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const birthdayModal = document.getElementById('birthday-modal');
+        const closeModal = document.getElementById('close-modal');
+
+        function onMouseClick(event) {
+            // Calculate mouse position in normalized device coordinates
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Check for intersections
+            const intersects = raycaster.intersectObjects(giftGroup.children);
+            if (intersects.length > 0) {
+                // Animate the gift opening
+                const lid = giftGroup.children.find(child => child.position.y > 0); // Find the lid
+                let openAngle = 0;
+                const openAnimation = () => {
+                    openAngle += 0.05;
+                    if(lid) {
+                         lid.rotation.x = -Math.min(openAngle, Math.PI / 2);
+                         lid.position.z = Math.sin(Math.min(openAngle, Math.PI / 2)) * 0.775;
+                    }
+                   
+                    if (openAngle < Math.PI / 2) {
+                        requestAnimationFrame(openAnimation);
+                    }
+                }
+                openAnimation();
+
+                // Show the modal
+                birthdayModal.classList.remove('hidden');
+                document.getElementById('content-overlay').style.display = 'none';
+            }
+        }
+
+        closeModal.addEventListener('click', () => {
+            birthdayModal.classList.add('hidden');
+            document.getElementById('content-overlay').style.display = 'flex';
+        });
+
+        window.addEventListener('click', onMouseClick);
+        window.addEventListener('touchstart', (e) => onMouseClick(e.touches[0]), { passive: false });
+
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Animate gift
+            giftGroup.rotation.y += 0.005;
+
+            // Animate hearts
+            hearts.forEach(heart => {
+                heart.position.y += 0.01;
+                if (heart.position.y > 8) {
+                    heart.position.y = -8;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- Handle Window Resize ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
